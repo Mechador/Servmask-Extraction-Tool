@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ServTool.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="550"
+        x:Class="ServTool.Views.MainWindow"
+        Icon="/Assets/servmask-logo.ico"
+        Title="Servmask Extraction Tool">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+	
+    <Window.Styles>
+        <Style Selector="Button.btn /template/ ContentPresenter">
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
+        <Style Selector="Button.btn">
+            <Setter Property="Foreground" Value="#FFFFFFFF" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Background" Value="#27aae1" />
+            <Setter Property="BorderBrush" Value="#FFFFFFFF" />
+        </Style>
+		<Style Selector="DockPanel">
+			<Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="0 10 10 0" />
+            <Setter Property="LastChildFill" Value="True" />
+		</Style>
+        <Style Selector="Button:pointerover.btn /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="#27aae1" />
+        </Style>
+    </Window.Styles>
+   
+    <DockPanel LastChildFill="True">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
+			<Button Classes="btn" Command="{Binding ExtractionFileCommand}">Extract File</Button>
+            <Button Classes="btn" Command="{Binding ListFileCommand}">List Backup</Button>
+            <Button Classes="btn" Command="{Binding SaveFileCommand}">Save List</Button>
+			
+        </StackPanel>
+		
+		<!--  <ListBox DockPanel.Dock="Bottom" ItemsSource="{Binding ErrorMessages}"/> -->
+        <TextBox Text="{Binding FileText, Mode=TwoWay}" 
+                 AcceptsReturn="True" 
+                 AcceptsTab="True" />
+    </DockPanel>
+</Window>

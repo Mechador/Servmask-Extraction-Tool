@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33205.214
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServTool", "ServTool\ServTool.csproj", "{936D5BA0-4CF8-4623-B474-4D1AC42B25CE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{936D5BA0-4CF8-4623-B474-4D1AC42B25CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{936D5BA0-4CF8-4623-B474-4D1AC42B25CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{936D5BA0-4CF8-4623-B474-4D1AC42B25CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{936D5BA0-4CF8-4623-B474-4D1AC42B25CE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D9C1F53A-78B6-4658-A4D5-E19AE5C5C66D}
+	EndGlobalSection
+EndGlobal

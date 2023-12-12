@@ -9,6 +9,8 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Text.RegularExpressions;
+using Avalonia.Styling;
 
 namespace ServTool.ViewModels
 {
@@ -27,13 +29,13 @@ namespace ServTool.ViewModels
                 var file = await DoOpenFilePickerAsync();
                 if (file is null) return;
 
-                    using
-                    var readStream = await file.OpenReadAsync();
-                    using
-                    var reader = new BinaryReader(readStream);
-                                    
-                    var backupSize = reader.BaseStream.Length;
-                    var curPosition = reader.BaseStream.Position;
+                using
+                var readStream = await file.OpenReadAsync();
+                using
+                var reader = new BinaryReader(readStream);
+
+                var backupSize = reader.BaseStream.Length;
+                var curPosition = reader.BaseStream.Position;
                 do
                 {
                     const int arrayLength = 4377;
@@ -61,7 +63,7 @@ namespace ServTool.ViewModels
                     FileText += fullPath + "\r\n";
                 }
                 while (curPosition < backupSize);
-                 
+
                 reader.Dispose();
 
             }
@@ -70,7 +72,7 @@ namespace ServTool.ViewModels
                 ErrorMessages?.Add(e.Message);
             }
 
-            
+
         }
 
         [RelayCommand]
@@ -88,7 +90,7 @@ namespace ServTool.ViewModels
                 //Getting a path of the opened backup
                 file.TryGetUri(out Uri? uri);
                 var dirOpenedFile = uri.AbsolutePath;
-               
+
 
                 using
                 var readStream = await file.OpenReadAsync();
@@ -127,42 +129,42 @@ namespace ServTool.ViewModels
                     string dirPath = System.IO.Path.Combine(path1, path);
                     string fullPath = System.IO.Path.Combine(path1, path, filename);
                     string result = fullPath + "\n";
-                    FileText += result ;
+                    FileText += result;
                     try
-                        {
+                    {
 
-                            // Try to create the directory.
-                            DirectoryInfo di = Directory.CreateDirectory(dirPath);
-                        
-                            // Create a new stream to write to the file
-                            var Writer = new BinaryWriter(File.OpenWrite(fullPath));
+                        // Try to create the directory.
+                        DirectoryInfo di = Directory.CreateDirectory(dirPath);
 
-                            // Writer raw data                
-                            Writer.Write(content);
-                            Writer.Flush();
-                            Writer.Close();
-                        }
-                        catch (Exception e)
-                         {
-                                Console.WriteLine("The process failed: {0}", e.ToString());
-                         }
-                        finally
-                        {
-                                //Console.WriteLine(path);
-                        }
-    
+                        // Create a new stream to write to the file
+                        var Writer = new BinaryWriter(File.OpenWrite(fullPath));
 
+                        // Writer raw data                
+                        Writer.Write(content);
+                        Writer.Flush();
+                        Writer.Close();
                     }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("The process failed: {0}", e.ToString());
+                    }
+                    finally
+                    {
+                        //Console.WriteLine(path);
+                    }
+
+
+                }
                 while (curPosition < backupSize);
 
                 reader.Dispose();
- 
+
             }
             catch (Exception e)
             {
                 ErrorMessages?.Add(e.Message);
             }
-            
+
         }
 
         [RelayCommand]
@@ -191,6 +193,101 @@ namespace ServTool.ViewModels
                 ErrorMessages?.Add(e.Message);
             }
         }
+
+        [RelayCommand]
+        private async Task CheckFile(CancellationToken token)
+        {
+            ErrorMessages?.Clear();
+            FileText = null;
+            bool package_found = false;
+            bool database_found = false;
+
+            try
+            {
+                var file = await DoOpenFilePickerAsync();
+                if (file is null) return;
+
+                using
+                var readStream = await file.OpenReadAsync();
+                using
+                var reader = new BinaryReader(readStream);
+
+                long backupSize = reader.BaseStream.Length;
+                var curPosition = reader.BaseStream.Position;
+
+                long offset_good = 0;
+
+                do
+                {
+
+                    const int arrayLength = 4377;
+
+                    var header = reader.ReadChars(arrayLength); //array of header chars
+                    char[] bFileName = new char[255]; //array chars that represents name of the file
+                    Array.Copy(header, 0, bFileName, 0, 255); //create array only with filename
+                    string filename = new string(bFileName).Replace("\0", string.Empty); //string with the name
+
+                    var test = new string(header);
+                    var trimFileName = test.Remove(0, 255);
+
+                    //Size of the file content
+                    var bFileSize = trimFileName.Substring(0, 14).Replace("\0", string.Empty); // Get filesize and trim null-bytes
+
+                    if (string.IsNullOrWhiteSpace(bFileSize))
+                    {
+                        FileText += "File is corrupted.Unexpected end of file";
+                        return;
+                    }
+
+                    int size = Convert.ToInt32(bFileSize);
+                    var path = trimFileName.Remove(0, 26).Replace("\0", string.Empty);
+
+                    offset_good = reader.BaseStream.Position - 4377;
+                    long next_offset = reader.BaseStream.Position + size;
+
+                    reader.BaseStream.Seek(next_offset, SeekOrigin.Begin);
+
+                    FileText += "Filename is '" + filename + "'" + "\r\n" +
+                    "The next file started at " + next_offset + "\r\n" +
+                    "This file started at " + offset_good + "\r\n" +
+                     "\r\n";
+
+                    if (filename == "package.json")
+                    {
+                        package_found = true;
+                    }
+
+                    if (filename == "database.sql")
+                    {
+                        database_found = true;
+                    }
+
+
+
+                    if (!package_found)
+                    {
+                        FileText = "[FAIL] File is corrupted: package.json is missing";
+                        // No package.json found
+                        return;
+                    }
+                }
+                while (curPosition < backupSize);
+
+                reader.Dispose();
+
+            }
+            catch (Exception e)
+            {
+                ErrorMessages?.Add(e.Message);
+            }
+
+            FileText += "Done.";
+            if (database_found)
+            {
+                FileText += "Database in position";
+            }
+        }
+
 
         private async Task<IStorageFile?> DoOpenFilePickerAsync()
         {
@@ -253,7 +350,7 @@ namespace ServTool.ViewModels
             });
 
             return files?.Count >= 1 ? files[0] : null;
-            
+
         }
 
 

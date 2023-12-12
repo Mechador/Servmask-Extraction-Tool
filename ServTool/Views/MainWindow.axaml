@@ -38,6 +38,7 @@
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
 			<Button Classes="btn" Command="{Binding ExtractionFileCommand}">Extract File</Button>
             <Button Classes="btn" Command="{Binding ListFileCommand}">List Backup</Button>
+			<Button Classes="btn" Command="{Binding CheckFileCommand}">Check Backup</Button>
             <Button Classes="btn" Command="{Binding SaveFileCommand}">Save List</Button>
 			
         </StackPanel>

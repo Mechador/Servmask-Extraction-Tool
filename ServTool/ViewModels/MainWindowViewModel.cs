@@ -207,10 +207,11 @@ namespace ServTool.ViewModels
                 var file = await DoOpenFilePickerAsync();
                 if (file is null) return;
 
-                using
-                var readStream = await file.OpenReadAsync();
-                using
-                var reader = new BinaryReader(readStream);
+                using var readStream = await file.OpenReadAsync();
+                using var reader = new BinaryReader(readStream);
+
+                const int HEADER_LENGTH = 4377;
+                const int EOF_MARKER_LENGTH = 4377;
 
                 long backupSize = reader.BaseStream.Length;
                 var curPosition = reader.BaseStream.Position;
@@ -219,14 +220,11 @@ namespace ServTool.ViewModels
 
                 do
                 {
-
-                    const int arrayLength = 4377;
-
-                    var header = reader.ReadChars(arrayLength); //array of header chars
+                    var header = reader.ReadChars(HEADER_LENGTH); //array of header chars
                     char[] bFileName = new char[255]; //array chars that represents name of the file
                     Array.Copy(header, 0, bFileName, 0, 255); //create array only with filename
                     string filename = new string(bFileName).Replace("\0", string.Empty); //string with the name
-
+                    
                     var test = new string(header);
                     var trimFileName = test.Remove(0, 255);
 
@@ -262,8 +260,6 @@ namespace ServTool.ViewModels
                         database_found = true;
                     }
 
-
-
                     if (!package_found)
                     {
                         FileText = "[FAIL] File is corrupted: package.json is missing";
@@ -271,7 +267,7 @@ namespace ServTool.ViewModels
                         return;
                     }
                 }
-                while (curPosition < backupSize);
+                while (reader.BaseStream.Position < backupSize - EOF_MARKER_LENGTH);
 
                 reader.Dispose();
 

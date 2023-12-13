@@ -11,6 +11,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Text.RegularExpressions;
 using Avalonia.Styling;
+using System.Drawing;
+using System.Linq;
 
 namespace ServTool.ViewModels
 {
@@ -212,9 +214,20 @@ namespace ServTool.ViewModels
 
                 const int HEADER_LENGTH = 4377;
                 const int EOF_MARKER_LENGTH = 4377;
-
                 long backupSize = reader.BaseStream.Length;
                 var curPosition = reader.BaseStream.Position;
+
+                //Check that the end of the file is correct
+
+                reader.BaseStream.Seek(backupSize - EOF_MARKER_LENGTH , SeekOrigin.Begin);
+                var eofContent = reader.ReadBytes(EOF_MARKER_LENGTH);
+                if (!eofContent.All(b => b == 0))
+                {
+                    FileText += "File is corrupted. No EOF found";
+                    return;
+                }
+                
+                reader.BaseStream.Seek(curPosition, SeekOrigin.Begin);
 
                 long offset_good = 0;
 
@@ -245,10 +258,7 @@ namespace ServTool.ViewModels
 
                     reader.BaseStream.Seek(next_offset, SeekOrigin.Begin);
 
-                    FileText += "Filename is '" + filename + "'" + "\r\n" +
-                    "The next file started at " + next_offset + "\r\n" +
-                    "This file started at " + offset_good + "\r\n" +
-                     "\r\n";
+                    FileText += "Filename is '" + filename + "'" + "\r\n";
 
                     if (filename == "package.json")
                     {
@@ -266,6 +276,8 @@ namespace ServTool.ViewModels
                         // No package.json found
                         return;
                     }
+
+
                 }
                 while (reader.BaseStream.Position < backupSize - EOF_MARKER_LENGTH);
 
@@ -282,6 +294,62 @@ namespace ServTool.ViewModels
             {
                 FileText += "Database in position";
             }
+        }
+
+        [RelayCommand]
+        private async Task RepairBackup(CancellationToken token)
+        {
+            ErrorMessages?.Clear();
+            FileText = null;
+            try
+            {
+                var file = await DoOpenFilePickerAsync();
+                if (file is null) return;
+
+                using
+                var readStream = await file.OpenReadAsync();
+                using
+                var reader = new BinaryReader(readStream);
+
+
+                const int HEADER_LENGTH = 4377;
+                const int EOF_MARKER_LENGTH = 4377;
+
+                var backupSize = reader.BaseStream.Length;
+                var positionEOF = backupSize - 4377;
+                //reader.BaseStream.Seek(positionEOF, SeekOrigin.Begin);
+                var curPosition = reader.BaseStream.Position;
+
+                FileText += backupSize + " " + curPosition;
+
+                //var currentPosition = reader.BaseStream.Position + size;
+                //reader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                //var currentPosition = reader.BaseStream.Position + size;
+
+                // Check for EOF Marker (4377 zero bytes)
+                if (reader.BaseStream.Position == backupSize - EOF_MARKER_LENGTH)
+                {
+                    var eofMarker = reader.ReadBytes(EOF_MARKER_LENGTH);
+                    if (eofMarker.All(b => b == 0))
+                    {
+                        // EOF Marker found, exit the loop
+                        FileText += "EOF found";
+                    } else
+                    {
+                        FileText += "File is corrupted. No EOF found";
+                        return;
+                    }
+                }
+
+                reader.Dispose();
+
+            }
+            catch (Exception e)
+            {
+                ErrorMessages?.Add(e.Message);
+            }
+            
+
         }
 
 

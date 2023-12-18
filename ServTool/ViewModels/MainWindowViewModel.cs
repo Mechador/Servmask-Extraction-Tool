@@ -297,7 +297,7 @@ namespace ServTool.ViewModels
         }
 
         [RelayCommand]
-        private async Task RepairBackup(CancellationToken token)
+        private async Task RemoveFrom(CancellationToken token)
         {
             ErrorMessages?.Clear();
             FileText = null;
@@ -311,36 +311,86 @@ namespace ServTool.ViewModels
                 using
                 var reader = new BinaryReader(readStream);
 
+                //Getting a path of the opened backup
+                file.TryGetUri(out Uri? uri);
+                var dirOpenedFile = uri.AbsolutePath;
+
+                var backupSize = reader.BaseStream.Length;
 
                 const int HEADER_LENGTH = 4377;
                 const int EOF_MARKER_LENGTH = 4377;
 
-                var backupSize = reader.BaseStream.Length;
-                var positionEOF = backupSize - 4377;
-                //reader.BaseStream.Seek(positionEOF, SeekOrigin.Begin);
-                var curPosition = reader.BaseStream.Position;
+                var tmp_file = dirOpenedFile + file.Name + ".tmp";
 
-                FileText += backupSize + " " + curPosition;
+                var Writer = new BinaryWriter(File.Open(tmp_file, FileMode.Append));
 
-                //var currentPosition = reader.BaseStream.Position + size;
-                //reader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
-                //var currentPosition = reader.BaseStream.Position + size;
-
-                // Check for EOF Marker (4377 zero bytes)
-                if (reader.BaseStream.Position == backupSize - EOF_MARKER_LENGTH)
+                do
                 {
-                    var eofMarker = reader.ReadBytes(EOF_MARKER_LENGTH);
-                    if (eofMarker.All(b => b == 0))
+                    
+                    var header = reader.ReadChars(HEADER_LENGTH); //array of header chars
+
+                    char[] bFileName = new char[255]; //array chars that represents name of the file
+                    Array.Copy(header, 0, bFileName, 0, 255); //create array only with filename
+                    string filename = new string(bFileName).Replace("\0", string.Empty); //string with the name
+
+                    var test = new string(header);
+                    var trimFileName = test.Remove(0, 255);
+
+                    //Size of the file content
+                    var bFileSize = trimFileName.Substring(0, 14).Replace("\0", string.Empty); // Get filesize and trim null-bytes
+                    int contentSize = Convert.ToInt32(bFileSize);
+                    var path = trimFileName.Remove(0, 26).Replace("\0", string.Empty);
+
+                    
+                    var content = reader.ReadBytes(contentSize); //Getting a file content
+
+                    //Increase by filesize and set a current position
+                    var currentPosition = reader.BaseStream.Position;
+                    reader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+
+                    string fullPath = path + "/" + filename;
+
+                    string[] SkippedItems = {
+                        "database.sql", 
+                        
+                    };
+
+
+                    //Check if the file should be skipped
+                    bool containsSkipItems = SkippedItems.Any(x => fullPath.Contains(x)); 
+
+                    if (containsSkipItems)
                     {
-                        // EOF Marker found, exit the loop
-                        FileText += "EOF found";
+                        FileText += "Skipping " + fullPath + "\n";
                     } else
                     {
-                        FileText += "File is corrupted. No EOF found";
-                        return;
-                    }
-                }
+                        try
+                        {
+                            //Write RAW data
+                            Writer.Write(header);
+                            Writer.Write(content);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("The process failed: {0}", e.ToString());
+                        }
+                        finally
+                        {
 
+                        }
+
+
+                    }
+
+
+
+                    
+                }
+                while (reader.BaseStream.Position < backupSize - EOF_MARKER_LENGTH);
+
+
+                Writer.Flush();
+                Writer.Close();
                 reader.Dispose();
 
             }

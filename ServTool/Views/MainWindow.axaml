@@ -40,7 +40,7 @@
             <Button Classes="btn" Command="{Binding ListFileCommand}">List Backup</Button>
 			<Button Classes="btn" Command="{Binding CheckFileCommand}">Check Backup</Button>
             <Button Classes="btn" Command="{Binding SaveFileCommand}">Save List</Button>
-			<Button Classes="btn" Command="{Binding RepairBackupCommand}">Repair Backup</Button>
+			<Button Classes="btn" Command="{Binding RemoveFromCommand}">Remove folder/files</Button>
 			
         </StackPanel>
 		
